@@ -258,7 +258,7 @@ concommand.Add("sniffer_menu", function()
 --]]
         local container = vgui.Create("DPanel", panel)
         container:SetPos(0, 250)
-        container:SetSize(390, 20)
+        container:SetSize(390 - 175, 20)
         container:SetToolTip(msg.Demsgion)
 
         local info = vgui.Create("DLabel", container)
