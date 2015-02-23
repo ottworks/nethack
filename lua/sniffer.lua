@@ -44,6 +44,7 @@ end
 local outgoingName
 local function logOutgoing(start, name, unreliable)
 	name = name or outgoingName
+	if not name then return end
 	outgoingCount[name] = (outgoingCount[name] or 0) + 1
 	if start then
 		outgoingName = name
@@ -98,7 +99,7 @@ local function hook()
 		local func = net.Receivers[ strName:lower() ]
 		if ( !func ) then return end
 		len = len - 16
-		if msgSettings[name] and msgSettings[name].sin then return end
+		if msgSettings[strName] and msgSettings[strName].sin then return end
 		logIncoming(strName, len, true)
 		func( len, client )
 		logIncoming(strName, len, false)
@@ -107,11 +108,13 @@ local function hook()
 	function net.Start(name, unreliable)
 		if msgSettings[name] and msgSettings[name].sout then return end
 		logOutgoing(true, name, unreliable)
+		netStart(name, unreliable)
 	end
 	netSendToServer = net.SendToServer
 	function net.SendToServer()
 		if msgSettings[name] and msgSettings[name].sout then return end
 		logOutgoing(false)
+		netSendToServer()
 	end
 end
 local function unhook()
