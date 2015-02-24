@@ -1,4 +1,4 @@
---Net Message Sniffer by Ott (STEAM_0:0:36527860)
+--nethack: Net message sniffer by Ott (STEAM_0:0:36527860)
 local netTypes = {
 	"Angle",
 	"Bit",
@@ -24,7 +24,7 @@ local shouldPrint
 local incomingCount = {}
 local outgoingCount = {}
 local msgSettings = {}
-local function snifferPrint(name, ...)
+local function logPrint(name, ...)
 	if shouldPrint then
 		if msgSettings[name] and not msgSettings[name].shown then return end
 		MsgC(...)
@@ -35,9 +35,9 @@ local function logIncoming(name, length, start)
 	incomingCount[name] = (incomingCount[name] or 0) + 1
 	if start then
 		incomingName = name
-		snifferPrint(name, COLOR_TEXT, "\n\nStarted ", COLOR_VAR, "incoming", COLOR_TEXT, " net message ", COLOR_STRING, "\"" .. name .. "\"", COLOR_TEXT, " of length ", COLOR_NUM, length .. ".")
+		logPrint(name, COLOR_TEXT, "\n\nStarted ", COLOR_VAR, "incoming", COLOR_TEXT, " net message ", COLOR_STRING, "\"" .. name .. "\"", COLOR_TEXT, " of length ", COLOR_NUM, length .. ".")
 	else
-		snifferPrint(name, COLOR_TEXT, "\nEnded ", COLOR_VAR, "incoming", COLOR_TEXT, " net message ", COLOR_STRING, "\"" .. name .. "\"", COLOR_TEXT, " of length ", COLOR_NUM, length .. ".\n")
+		logPrint(name, COLOR_TEXT, "\nEnded ", COLOR_VAR, "incoming", COLOR_TEXT, " net message ", COLOR_STRING, "\"" .. name .. "\"", COLOR_TEXT, " of length ", COLOR_NUM, length .. ".\n")
 		incomingName = nil
 	end
 end
@@ -48,26 +48,26 @@ local function logOutgoing(start, name, unreliable)
 	outgoingCount[name] = (outgoingCount[name] or 0) + 1
 	if start then
 		outgoingName = name
-		snifferPrint(name, COLOR_TEXT, "\n\nStarted ", COLOR_VAR, "outgoing", COLOR_TEXT, " net message ", COLOR_STRING, "\"" .. name .. "\"", COLOR_TEXT, ".")
+		logPrint(name, COLOR_TEXT, "\n\nStarted ", COLOR_VAR, "outgoing", COLOR_TEXT, " net message ", COLOR_STRING, "\"" .. name .. "\"", COLOR_TEXT, ".")
 	else
-		snifferPrint(outgoingName, COLOR_TEXT, "\nEnded ", COLOR_VAR, "outgoing", COLOR_TEXT, " net message ", COLOR_STRING, "\"" .. outgoingName .. "\"", COLOR_TEXT, " of length ", COLOR_NUM, length, COLOR_TEXT, ". Total size: ", COLOR_NUM, net.BytesWritten(), COLOR_TEXT, ".\n")
+		logPrint(outgoingName, COLOR_TEXT, "\nEnded ", COLOR_VAR, "outgoing", COLOR_TEXT, " net message ", COLOR_STRING, "\"" .. outgoingName .. "\"", COLOR_TEXT, " of length ", COLOR_NUM, length, COLOR_TEXT, ". Total size: ", COLOR_NUM, net.BytesWritten(), COLOR_TEXT, ".\n")
 		outgoingName = nil
 	end
 end
 local function logRead(type, val, ...)
 	local args = {...}
 	if #args > 0 then
-		snifferPrint(incomingName, COLOR_TEXT, "\n\tRead ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
+		logPrint(incomingName, COLOR_TEXT, "\n\tRead ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
 	else
-		snifferPrint(incomingName, COLOR_TEXT, "\n\tRead ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, ".")
+		logPrint(incomingName, COLOR_TEXT, "\n\tRead ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, ".")
 	end
 end
 local function logWrite(type, val, ...)
 	local args = {...}
 	if #args > 0 then
-		snifferPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
+		logPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
 	else
-		snifferPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, ".")
+		logPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, ".")
 	end
 end
 local netFunctions = {}
@@ -129,34 +129,34 @@ local function unhook()
 	net.SendToServer = netSendToServer
 end
 
-CreateClientConVar("sniffer_enabled", 1)
-cvars.AddChangeCallback("sniffer_enabled", function(name, value_old, value_new)
-	if GetConVarNumber("sniffer_enabled") == 1 then
+CreateClientConVar("nethack_enabled", 1)
+cvars.AddChangeCallback("nethack_enabled", function(name, value_old, value_new)
+	if GetConVarNumber("nethack_enabled") == 1 then
 		hook()
-	elseif GetConVarNumber("sniffer_enabled") == 0 then
+	elseif GetConVarNumber("nethack_enabled") == 0 then
 		unhook()
 	end
 end)
-if GetConVarNumber("sniffer_enabled") == 1 then
+if GetConVarNumber("nethack_enabled") == 1 then
 	hook()
 end
 
-CreateClientConVar("sniffer_print", 1)
-cvars.AddChangeCallback("sniffer_print", function(name, value_old, value_new)
-	if GetConVarNumber("sniffer_print") == 1 then
+CreateClientConVar("nethack_print", 1)
+cvars.AddChangeCallback("nethack_print", function(name, value_old, value_new)
+	if GetConVarNumber("nethack_print") == 1 then
 		shouldPrint = true
-	elseif GetConVarNumber("sniffer_print") == 0 then
+	elseif GetConVarNumber("nethack_print") == 0 then
 		shouldPrint = false
 	end
 end)
-if GetConVarNumber("sniffer_print") ~= 0 then
+if GetConVarNumber("nethack_print") ~= 0 then
 	shouldPrint = true
 end
 
-concommand.Add("sniffer_menu", function()
+concommand.Add("nethack_menu", function()
 	PrintTable(msgSettings)
 	local frame = vgui.Create( "DFrame" )
-    frame:SetTitle("Sniffer :: Configuration")
+    frame:SetTitle("Nethack :: Configuration")
     frame:SetSize(500, 300)
     frame:SetVisible( true )
     frame:SetDraggable( true )
@@ -186,8 +186,8 @@ concommand.Add("sniffer_menu", function()
         lines[name] = list:AddLine(name, incomingCount[name] or 0, outgoingCount[name] or 0)
     end
     
-    timer.Destroy("sniffer_update")
-    timer.Create("sniffer_update", 1, 0, function()
+    timer.Destroy("nethack_update")
+    timer.Create("nethack_update", 1, 0, function()
     	if IsValid(frame) then
     		local msgs = table.Copy(incomingCount)
     		local msgs2 = table.Copy(outgoingCount)
