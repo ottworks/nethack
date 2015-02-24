@@ -78,7 +78,7 @@ end
 local function logWrite(type, val, ...)
 	local args = {...}
 	if lastOutMsg[outgoingName] then
-		lastOutMsg[outgoingName][#(lastOutMsg[outgoingName] or {}) + 1] = {type = type, val = val, arg = args[1]}
+		lastOutMsg[outgoingName][#lastOutMsg[outgoingName] + 1] = {type = type, val = val, arg = args[1]}
 	end
 	if #args > 0 then
 		logPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
@@ -281,6 +281,9 @@ concommand.Add("nethack_menu", function()
 		explore:SetSize(390 - 175 - 20, 20)
 		explore:SetText("Explore...")
 		explore.DoClick = function()
+			local lastTable = lastInMsg
+			local nlist
+			
 			local exframe = vgui.Create("DFrame")
 			exframe:SetTitle("Nethack :: " .. name .. " :: Explore")
 			exframe:SetSize(500, 300)
@@ -295,15 +298,36 @@ concommand.Add("nethack_menu", function()
 			props:SetPos(0, 25)
 			props:SetSize(500, 300 - 25)
 			
+			local inout = vgui.Create("DCheckBoxLabel", exframe)
+			inout:SetPos(500 - 100, 25)
+			inout:SetText("In/Out Toggle")
+			inout:SetValue(1)
+			inout:SizeToContents()
+			inout.OnChange = function(val)
+				if val:GetChecked() then
+					lastTable = lastInMsg
+				else
+					lastTable = lastOutMsg
+				end
+				nlist:Clear()
+				if lastTable[name] then
+					for i = 1, #lastTable[name] do
+						nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+					end
+				end
+			end
+			
 			local viewpanel = vgui.Create("DPanel")
-				local nlist = vgui.Create("DListView", viewpanel)
+				nlist = vgui.Create("DListView", viewpanel)
 				nlist:Dock(FILL)
 				nlist:AddColumn("Type")
 				nlist:AddColumn("Value")
 				nlist:AddColumn("Parameter")
 				
-				for i = 1, #lastInMsg[name] do
-					nlist:AddLine(lastInMsg[name][i].type, lastInMsg[name][i].val, lastInMsg[name][i].arg)
+				if lastTable[name] then
+					for i = 1, #lastTable[name] do
+						nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+					end
 				end
 		   	local explorepanel = vgui.Create("DPanel")
 		  	 	local etex = vgui.Create("RichText", explorepanel)
@@ -317,8 +341,10 @@ concommand.Add("nethack_menu", function()
 			viewtab.DoClick = function(self)
 				self:GetPropertySheet():SetActiveTab( self )
 				nlist:Clear()
-				for i = 1, #lastInMsg[name] do
-					nlist:AddLine(lastInMsg[name][i].type, lastInMsg[name][i].val, lastInMsg[name][i].arg)
+				if lastTable[name] then
+					for i = 1, #lastTable[name] do
+						nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+					end
 				end
 			end
 			props:AddSheet("Explore", explorepanel)
