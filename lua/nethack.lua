@@ -332,8 +332,38 @@ concommand.Add("nethack_menu", function()
 		   	local explorepanel = vgui.Create("DPanel")
 		  	 	local etex = vgui.Create("RichText", explorepanel)
 		  	 	etex:Dock(FILL)
-		  	 	etex:InsertColorChange(0, 0, 0, 255)
-		   		etex:AppendText("code goes here")
+		  	 	etex:InsertColorChange(128, 128, 255, 255)
+		  	 	local info = debug.getinfo(net.Receivers[string.lower(name)])
+		  	 	local src = info.short_src
+		   		etex:AppendText(src .. "\n")
+		   		etex:InsertColorChange(0, 0, 0, 196)
+		   		local file = file.Open(src, "r", "MOD")
+		   		if file then
+		   			local str = file:Read(file:Size())
+		   			file:Close()
+		   			local lines = {}
+		   			local cursor = 1
+		   			while true do
+		   				local pos = string.find(str, "\n", cursor)
+		   				if pos then
+		   					lines[#lines + 1] = string.sub(str, cursor, pos - 1)
+		   					cursor = pos + 1
+		   				else
+		   					break
+		   				end
+		   			end
+		   			print(#lines)
+		   			for ln = 1, #lines do
+		   				if ln == info.linedefined then
+		   					etex:InsertColorChange(0, 0, 0, 255)
+		   				elseif ln == info.lastlinedefined + 1 then
+		   					etex:InsertColorChange(0, 0, 0, 196)
+		   				end
+		   				etex:AppendText(lines[ln] .. "\n")
+		   			end
+		   		else
+		   			print("File not opened!")
+		   		end
 		   	local interceptpanel = vgui.Create("DPanel")
 		   	local spoofpanel = vgui.Create("DPanel")
 			
