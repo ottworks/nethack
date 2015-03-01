@@ -103,7 +103,7 @@ local function hook()
 		netFunctions[i + #netTypes] = net["Write"..netTypes[i]]
 		net["Write" .. netTypes[i]] = function(val, ...)
 			if outgoingName and msgSettings[outgoingName] and msgSettings[outgoingName].sout then return end
-			logWrite(netTypes[i + #netTypes], val, ...)
+			logWrite(netTypes[i], val, ...)
 			netFunctions[i + #netTypes](val, ...)
 		end
 	end
