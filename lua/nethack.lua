@@ -226,7 +226,7 @@ concommand.Add("nethack_menu", function()
 	panel:SetSize(390 - 175, 270)
 	panel:SetBackgroundColor(Color(234, 234, 234, 255))
 
-	list.OnRowSelected = function (self, line)
+	list.OnRowSelected = function(self, line)
 		local name = self:GetLine(line):GetValue(1)
 		panel:Clear()
  
@@ -238,7 +238,7 @@ concommand.Add("nethack_menu", function()
 			shown = true,
 			sin = false,
 			sout = false,
-   		}
+		}
 		local msg = msgSettings[name]
 		local general = props:CreateRow("General", "Shown?")
 		general:Setup("Boolean")
@@ -347,6 +347,7 @@ concommand.Add("nethack_menu", function()
 						end
 					end
 				end
+			---inout
 			
 			local viewpanel = vgui.Create("DPanel")
 				nlist = vgui.Create("DListView", viewpanel)
@@ -360,6 +361,7 @@ concommand.Add("nethack_menu", function()
 							nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
 						end
 					end
+			---viewpanel
 			
 			local explorepanel = vgui.Create("DPanel")
 				local etex = vgui.Create("RichText", explorepanel)
@@ -401,6 +403,8 @@ concommand.Add("nethack_menu", function()
 					else
 						etex:AppendText("Could not read function.")
 					end
+				---etex
+			---explorepanel
 			
 			local interceptpanel = vgui.Create("DPanel")
 			
@@ -432,6 +436,7 @@ concommand.Add("nethack_menu", function()
 							srows[#srows + 1] = {row = a, msg = msg}
 						end
 					end
+				---sprop
 				local sbut = vgui.Create("DButton", spoofpanel)
 					sbut:SetSize(0, 25)
 					sbut:Dock(BOTTOM)
@@ -452,6 +457,8 @@ concommand.Add("nethack_menu", function()
 							end
 						end
 					end
+				---sbut
+			---spoofpanel
 				
 			local viewtab = props:AddSheet("View", viewpanel).Tab
 				viewtab.DoClick = function(self)
@@ -463,24 +470,26 @@ concommand.Add("nethack_menu", function()
 						end
 					end
 				end
-			end
+			---viewtab
+			
 			props:AddSheet("Explore", explorepanel)
 			props:AddSheet("Intercept", interceptpanel)
 			props:AddSheet("Spoof", spoofpanel)
 		end
 		
 		local container = vgui.Create("DPanel", panel)
-		container:SetPos(0, 250)
-		container:SetSize(390 - 175, 20)
-		container:SetToolTip(msg.Demsgion)
+			container:SetPos(0, 250)
+			container:SetSize(390 - 175, 20)
+			container:SetToolTip(msg.Demsgion)
+		---container
 
 		local info = vgui.Create("DLabel", container)
-		info:SetPos(0, 0)
-		info:SetText(name)
-
-		info:SetDark(1)
-		info:SizeToContents()
-		info:CenterHorizontal(0.5)
-		info:CenterVertical(0.5)
+			info:SetPos(0, 0)
+			info:SetText(name)
+			info:SetDark(1)
+			info:SizeToContents()
+			info:CenterHorizontal(0.5)
+			info:CenterVertical(0.5)
+		---info
 	end
 end)
