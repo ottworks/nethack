@@ -287,6 +287,40 @@ concommand.Add("nethack_menu", function()
 			local srows = {}
 			local inorout = true
 			
+			local function updatesprop()
+				if lastTable[name] then
+					for i = 1, #lastTable[name] do
+						local msg = lastTable[name][i]
+						local a
+						if msg.arg then
+							a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>") .. " (" .. msg.arg .. ")")
+						else
+							a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>"))
+						end
+						a:Setup("Generic")
+						a.DataChanged = function(self, value)
+							a.val = value
+						end
+						--[[
+						if msg.type == "Float" then
+							a:Setup("Float")
+						elseif msg.type == "Int" or msg.type == "UInt" then
+							a:Setup("Int")
+						else
+							a:Setup("Generic")
+						end--]]
+						srows[#srows + 1] = {row = a, msg = msg}
+					end
+				end
+			end
+			local function updatenlist()
+				if lastTable[name] then
+					for i = 1, #lastTable[name] do
+						nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+					end
+				end
+			end
+			
 			local exframe = vgui.Create("DFrame")
 			exframe:SetTitle("Nethack :: " .. name .. " :: Explore")
 			exframe:SetSize(500, 300)
@@ -315,37 +349,9 @@ concommand.Add("nethack_menu", function()
 						inorout = false
 					end
 					nlist:Clear()
-					if lastTable[name] then
-						for i = 1, #lastTable[name] do
-							nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
-						end
-					end
-					
+					updatenlist()
 					sprop:Clear()
-					if lastTable[name] then
-						for i = 1, #lastTable[name] do
-							local msg = lastTable[name][i]
-							local a
-							if msg.arg then
-								a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>") .. " (" .. msg.arg .. ")")
-							else
-								a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>"))
-							end
-							a:Setup("Generic")
-							a.DataChanged = function(self, value)
-								a.val = value
-							end
-							--[[
-							if msg.type == "Float" then
-								a:Setup("Float")
-							elseif msg.type == "Int" or msg.type == "UInt" then
-								a:Setup("Int")
-							else
-								a:Setup("Generic")
-							end--]]
-							srows[#srows + 1] = {row = a, msg = msg}
-						end
-					end
+					updatesprop()
 				end
 			---inout
 			
@@ -355,12 +361,7 @@ concommand.Add("nethack_menu", function()
 					nlist:AddColumn("Type")
 					nlist:AddColumn("Value")
 					nlist:AddColumn("Parameter")
-					
-					if lastTable[name] then
-						for i = 1, #lastTable[name] do
-							nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
-						end
-					end
+					updatenlist()
 			---viewpanel
 			
 			local explorepanel = vgui.Create("DPanel")
@@ -412,30 +413,7 @@ concommand.Add("nethack_menu", function()
 				local sw, sh = spoofpanel:GetSize()
 				sprop = vgui.Create("DProperties", spoofpanel)
 					sprop:Dock(FILL)
-					if lastTable[name] then
-						for i = 1, #lastTable[name] do
-							local msg = lastTable[name][i]
-							local a
-							if msg.arg then
-								a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>") .. " (" .. msg.arg .. ")")
-							else
-								a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>"))
-							end
-							a:Setup("Generic")
-							a.DataChanged = function(self, value)
-								a.val = value
-							end
-							--[[
-							if msg.type == "Float" then
-								a:Setup("Float")
-							elseif msg.type == "Int" or msg.type == "UInt" then
-								a:Setup("Int")
-							else
-								a:Setup("Generic")
-							end--]]
-							srows[#srows + 1] = {row = a, msg = msg}
-						end
-					end
+					updatesprop()
 				---sprop
 				local sbut = vgui.Create("DButton", spoofpanel)
 					sbut:SetSize(0, 25)
@@ -464,11 +442,7 @@ concommand.Add("nethack_menu", function()
 				viewtab.DoClick = function(self)
 					self:GetPropertySheet():SetActiveTab( self )
 					nlist:Clear()
-					if lastTable[name] then
-						for i = 1, #lastTable[name] do
-							nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
-						end
-					end
+					updatenlist()
 				end
 			---viewtab
 			
