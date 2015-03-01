@@ -283,6 +283,9 @@ concommand.Add("nethack_menu", function()
 		explore.DoClick = function()
 			local lastTable = lastInMsg
 			local nlist
+			local sprop
+			local srows = {}
+			local inorout = true
 			
 			local exframe = vgui.Create("DFrame")
 			exframe:SetTitle("Nethack :: " .. name .. " :: Explore")
@@ -299,81 +302,165 @@ concommand.Add("nethack_menu", function()
 			props:SetSize(500, 300 - 25)
 			
 			local inout = vgui.Create("DCheckBoxLabel", exframe)
-			inout:SetPos(500 - 100, 25)
-			inout:SetText("In/Out Toggle")
-			inout:SetValue(1)
-			inout:SizeToContents()
-			inout.OnChange = function(val)
-				if val:GetChecked() then
-					lastTable = lastInMsg
-				else
-					lastTable = lastOutMsg
-				end
-				nlist:Clear()
-				if lastTable[name] then
-					for i = 1, #lastTable[name] do
-						nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+				inout:SetPos(500 - 100, 25)
+				inout:SetText("In/Out Toggle")
+				inout:SetValue(1)
+				inout:SizeToContents()
+				inout.OnChange = function(val)
+					if val:GetChecked() then
+						lastTable = lastInMsg
+						inorout = true
+					else
+						lastTable = lastOutMsg
+						inorout = false
+					end
+					nlist:Clear()
+					if lastTable[name] then
+						for i = 1, #lastTable[name] do
+							nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+						end
+					end
+					
+					sprop:Clear()
+					if lastTable[name] then
+						for i = 1, #lastTable[name] do
+							local msg = lastTable[name][i]
+							local a
+							if msg.arg then
+								a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>") .. " (" .. msg.arg .. ")")
+							else
+								a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>"))
+							end
+							a:Setup("Generic")
+							a.DataChanged = function(self, value)
+								a.val = value
+							end
+							--[[
+							if msg.type == "Float" then
+								a:Setup("Float")
+							elseif msg.type == "Int" or msg.type == "UInt" then
+								a:Setup("Int")
+							else
+								a:Setup("Generic")
+							end--]]
+							srows[#srows + 1] = {row = a, msg = msg}
+						end
 					end
 				end
-			end
 			
 			local viewpanel = vgui.Create("DPanel")
 				nlist = vgui.Create("DListView", viewpanel)
-				nlist:Dock(FILL)
-				nlist:AddColumn("Type")
-				nlist:AddColumn("Value")
-				nlist:AddColumn("Parameter")
-				
-				if lastTable[name] then
-					for i = 1, #lastTable[name] do
-						nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+					nlist:Dock(FILL)
+					nlist:AddColumn("Type")
+					nlist:AddColumn("Value")
+					nlist:AddColumn("Parameter")
+					
+					if lastTable[name] then
+						for i = 1, #lastTable[name] do
+							nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+						end
 					end
-				end
-		   	local explorepanel = vgui.Create("DPanel")
-		  	 	local etex = vgui.Create("RichText", explorepanel)
-		  	 	etex:Dock(FILL)
-		  	 	etex:InsertColorChange(128, 128, 255, 255)
-		  	 	local info = debug.getinfo(net.Receivers[string.lower(name)])
-		  	 	local src = info.short_src
-		   		etex:AppendText(src .. "\n")
-		   		etex:InsertColorChange(0, 0, 0, 196)
-		   		local file = file.Open(src, "r", "MOD")
-		   		if file then
-		   			local str = file:Read(file:Size())
-		   			file:Close()
-		   			local lines = {}
-		   			local cursor = 1
-		   			while true do
-		   				local pos = string.find(str, "\n", cursor)
-		   				if pos then
-		   					lines[#lines + 1] = string.sub(str, cursor, pos - 1)
-		   					cursor = pos + 1
-		   				else
-		   					break
-		   				end
-		   			end
-		   			print(#lines)
-		   			for ln = 1, #lines do
-		   				if ln == info.linedefined then
-		   					etex:InsertColorChange(0, 0, 0, 255)
-		   				elseif ln == info.lastlinedefined + 1 then
-		   					etex:InsertColorChange(0, 0, 0, 196)
-		   				end
-		   				etex:AppendText(lines[ln] .. "\n")
-		   			end
-		   		else
-		   			print("File not opened!")
-		   		end
-		   	local interceptpanel = vgui.Create("DPanel")
-		   	local spoofpanel = vgui.Create("DPanel")
 			
+			local explorepanel = vgui.Create("DPanel")
+				local etex = vgui.Create("RichText", explorepanel)
+					etex:Dock(FILL)
+					etex:InsertColorChange(128, 128, 255, 255)
+					local func = net.Receivers[string.lower(name)]
+					if func then
+						local info = debug.getinfo(func)
+						local src = info.short_src
+						etex:AppendText(src .. "\n")
+						etex:InsertColorChange(0, 0, 0, 196)
+						local file = file.Open(src, "r", "MOD")
+						if file then
+							local str = file:Read(file:Size())
+							file:Close()
+							local lines = {}
+							local cursor = 1
+							while true do
+								local pos = string.find(str, "\n", cursor)
+								if pos then
+									lines[#lines + 1] = string.sub(str, cursor, pos - 1)
+									cursor = pos + 1
+								else
+									break
+								end
+							end
+							print(#lines)
+							for ln = 1, #lines do
+								if ln == info.linedefined then
+									etex:InsertColorChange(0, 0, 0, 255)
+								elseif ln == info.lastlinedefined + 1 then
+									etex:InsertColorChange(0, 0, 0, 196)
+								end
+								etex:AppendText(lines[ln] .. "\n")
+							end
+						else
+							etex:AppendText("Could not read file.")
+						end
+					else
+						etex:AppendText("Could not read function.")
+					end
+			
+			local interceptpanel = vgui.Create("DPanel")
+			
+			local spoofpanel = vgui.Create("DPanel")
+				local sw, sh = spoofpanel:GetSize()
+				sprop = vgui.Create("DProperties", spoofpanel)
+					sprop:Dock(FILL)
+					if lastTable[name] then
+						for i = 1, #lastTable[name] do
+							local msg = lastTable[name][i]
+							local a
+							if msg.arg then
+								a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>") .. " (" .. msg.arg .. ")")
+							else
+								a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>"))
+							end
+							a:Setup("Generic")
+							a.DataChanged = function(self, value)
+								a.val = value
+							end
+							--[[
+							if msg.type == "Float" then
+								a:Setup("Float")
+							elseif msg.type == "Int" or msg.type == "UInt" then
+								a:Setup("Int")
+							else
+								a:Setup("Generic")
+							end--]]
+							srows[#srows + 1] = {row = a, msg = msg}
+						end
+					end
+				local sbut = vgui.Create("DButton", spoofpanel)
+					sbut:SetSize(0, 25)
+					sbut:Dock(BOTTOM)
+					sbut:SetText("Spoof")
+					sbut.DoClick = function()
+						if lastTable[name] then
+							if inorout then
+								
+							else
+								net.Start(name)
+								for i = 1, #srows do
+									local msg = srows[i].msg
+									local a = srows[i].row
+									local val = a.val
+									net["Write" .. msg.type](val, msg.arg)
+								end
+								net.SendToServer()
+							end
+						end
+					end
+				
 			local viewtab = props:AddSheet("View", viewpanel).Tab
-			viewtab.DoClick = function(self)
-				self:GetPropertySheet():SetActiveTab( self )
-				nlist:Clear()
-				if lastTable[name] then
-					for i = 1, #lastTable[name] do
-						nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+				viewtab.DoClick = function(self)
+					self:GetPropertySheet():SetActiveTab( self )
+					nlist:Clear()
+					if lastTable[name] then
+						for i = 1, #lastTable[name] do
+							nlist:AddLine(lastTable[name][i].type, lastTable[name][i].val, lastTable[name][i].arg)
+						end
 					end
 				end
 			end
