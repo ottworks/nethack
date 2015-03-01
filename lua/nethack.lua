@@ -34,8 +34,8 @@ local function logPrint(name, ...)
 end
 local incomingName
 local function logIncoming(name, length, start)
-	incomingCount[name] = (incomingCount[name] or 0) + 1
 	if start then
+		incomingCount[name] = (incomingCount[name] or 0) + 1
 		lastInMsg[name] = {header = {name = name, length = length}}
 	end
 	if start then
@@ -50,8 +50,8 @@ local outgoingName
 local function logOutgoing(start, name, unreliable)
 	name = name or outgoingName
 	if not name then return end
-	outgoingCount[name] = (outgoingCount[name] or 0) + 1
 	if start then
+		outgoingCount[name] = (outgoingCount[name] or 0) + 1
 		lastOutMsg[name] = {header = {name = name, length = 0}}
 	else
 		lastOutMsg[name].header.length = net.BytesWritten()
