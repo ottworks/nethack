@@ -64,26 +64,65 @@ local function logOutgoing(start, name, unreliable)
 		outgoingName = nil
 	end
 end
+
+local function shouldLogRead(type, val, args)
+	local last = lastInMsg[incomingName]
+	if last then
+		if #last > 0 then
+			if last[#last].type == "UInt" and last[#last].arg == 16 and type == "Entity" then
+				if not last.ignoredlast then
+					last[#last] = nil
+					last.ignoredlast = true
+					return true
+				else
+					last.ignoredlast = false
+				end
+			end
+		end
+	else
+		print("last isn't valid (what the fuck)")
+	end
+	return true
+end
 local function logRead(type, val, ...)
 	local args = {...}
-	if lastInMsg[incomingName] then
-		lastInMsg[incomingName][#lastInMsg[incomingName] + 1] = {type = type, val = val, arg = args[1]}
+	if shouldLogRead(type, val, args) then
+		if lastInMsg[incomingName] then
+			lastInMsg[incomingName][#lastInMsg[incomingName] + 1] = {type = type, val = val, arg = args[1]}
+		end
+		if #args > 0 then
+			logPrint(incomingName, COLOR_TEXT, "\n\tRead ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
+		else
+			logPrint(incomingName, COLOR_TEXT, "\n\tRead ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, ".")
+		end
 	end
-	if #args > 0 then
-		logPrint(incomingName, COLOR_TEXT, "\n\tRead ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
-	else
-		logPrint(incomingName, COLOR_TEXT, "\n\tRead ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, ".")
+end
+
+local function shouldLogWrite(type, val, args)
+	local last = lastOutMsg[outgoingName]
+	if #last > 0 then
+		if last[#last].type == "Entity" and type == "UInt" and args[1] == 16 then
+			if not last.ignoredlast then
+				last.ignoredlast = true
+				return false
+			else
+				last.ignoredlast = false
+			end
+		end
 	end
+	return true
 end
 local function logWrite(type, val, ...)
 	local args = {...}
-	if lastOutMsg[outgoingName] then
-		lastOutMsg[outgoingName][#lastOutMsg[outgoingName] + 1] = {type = type, val = val, arg = args[1]}
-	end
-	if #args > 0 then
-		logPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
-	else
-		logPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, ".")
+	if shouldLogWrite(type, val, args) then
+		if lastOutMsg[outgoingName] then
+			lastOutMsg[outgoingName][#lastOutMsg[outgoingName] + 1] = {type = type, val = val, arg = args[1]}
+		end
+		if #args > 0 then
+			logPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, " with parameters ", COLOR_VAR, "{" .. table.concat(args, ", ") .. "}", COLOR_TEXT, ".")
+		else
+			logPrint(outgoingName, COLOR_TEXT, "\n\tWrote ", COLOR_VAR, tostring(type), COLOR_TEXT, " of value ", COLOR_STRING, "'" .. tostring(val) .. "'", COLOR_TEXT, ".")
+		end
 	end
 end
 local netFunctions = {}
