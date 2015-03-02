@@ -125,6 +125,26 @@ local function logWrite(type, val, ...)
 		end
 	end
 end
+local function convertToType(val, type)
+	if type == "Float" then
+		return tonumber(val)
+	elseif type == "Int" then
+		return math.floor(val)
+	elseif type == "UInt" then
+		return math.abs(math.floor(val))
+	elseif type == "Entity" then
+		return Entity(val)
+	elseif type == "Bool" then
+		return val == "true" or false
+	elseif type == "Angle" then
+		local exp = string.Explode(val, "%D", true)
+		return Angle(unpack(exp))
+	elseif type == "Vector" then
+		local exp = string.Explode(val, "%D", true)
+		return Vector(unpack(exp))
+	end
+	return val
+end
 local netFunctions = {}
 local netIncoming
 local netStart
@@ -468,7 +488,7 @@ concommand.Add("nethack_menu", function()
 									local msg = srows[i].msg
 									local a = srows[i].row
 									local val = a.val
-									net["Write" .. msg.type](val, msg.arg)
+									net["Write" .. msg.type](convertToType(val, msg.type), msg.arg)
 								end
 								net.SendToServer()
 							end
