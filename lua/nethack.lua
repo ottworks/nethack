@@ -26,6 +26,7 @@ local outgoingCount = {}
 local msgSettings = {}
 local lastInMsg = {}
 local lastOutMsg = {}
+local readQueue = {}
 local function logPrint(name, ...)
 	if shouldPrint then
 		if msgSettings[name] and not msgSettings[name].shown then return end
@@ -153,7 +154,12 @@ local function hook()
 	for i = 1, #netTypes do
 		netFunctions[i] = net["Read"..netTypes[i]]
 		net["Read" .. netTypes[i]] = function(...)
-			local val = netFunctions[i](...)
+			local val
+			if #readQueue > 0 then
+				val = convertToType(table.remove(readQueue, 1), netTypes[i])
+			else
+				val = netFunctions[i](...)
+			end
 			logRead(netTypes[i], val, ...)
 			return val
 		end
@@ -481,7 +487,15 @@ concommand.Add("nethack_menu", function()
 					sbut.DoClick = function()
 						if lastTable[name] then
 							if inorout then
-								
+								for i = 1, #srows do
+									local msg = srows[i].msg
+									local a = srows[i].row
+									local val = a.val
+									readQueue[#readQueue + 1] = val
+								end
+								logIncoming(name, 0, true)
+								net.Receivers[string.lower(name)]()
+								logIncoming(name, 0, false)
 							else
 								net.Start(name)
 								for i = 1, #srows do
