@@ -427,6 +427,11 @@ concommand.Add("nethack_menu", function()
 						nlist:AddColumn("Value")
 						nlist:AddColumn("Parameter")
 						updatenlist()
+						function nlist:DoDoubleClick(id, line)
+							SetClipboardText(line.Columns[2]:GetValue())
+							notification.AddLegacy("Content copied to clipboard.", NOTIFY_UNDO, 3)
+							surface.PlaySound("buttons/button15.wav")
+						end
 					---nlist
 				---viewpanel
 				
