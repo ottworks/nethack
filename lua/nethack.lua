@@ -362,7 +362,7 @@ concommand.Add("nethack_menu", function()
 						else
 							a = sprop:CreateRow("General", i .. ". " .. (msg.type or "<none>"))
 						end
-						a:Setup("Generic")
+						a:Setup("Generic", {})
 						a.DataChanged = function(self, value)
 							a.val = value
 						end
