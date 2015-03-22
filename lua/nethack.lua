@@ -68,6 +68,7 @@ end
 
 local function shouldLogRead(type, val, args)
 	local last = lastInMsg[incomingName]
+	if not last then return end
 	if last then
 		if #last > 0 then
 			if last[#last].type == "UInt" and last[#last].arg == 16 and type == "Entity" then
@@ -101,6 +102,7 @@ end
 
 local function shouldLogWrite(type, val, args)
 	local last = lastOutMsg[outgoingName]
+	if not last then return end
 	if #last > 0 then
 		if last[#last].type == "Entity" and type == "UInt" and args[1] == 16 then
 			if not last.ignoredlast then
