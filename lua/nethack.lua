@@ -69,20 +69,16 @@ end
 local function shouldLogRead(type, val, args)
 	local last = lastInMsg[incomingName]
 	if not last then return end
-	if last then
-		if #last > 0 then
-			if last[#last].type == "UInt" and last[#last].arg == 16 and type == "Entity" then
-				if not last.ignoredlast then
-					last[#last] = nil
-					last.ignoredlast = true
-					return true
-				else
-					last.ignoredlast = false
-				end
+	if #last > 0 then
+		if last[#last].type == "UInt" and last[#last].arg == 16 and type == "Entity" then
+			if not last.ignoredlast then
+				last[#last] = nil
+				last.ignoredlast = true
+				return true
+			else
+				last.ignoredlast = false
 			end
 		end
-	else
-		print("last isn't valid (what the fuck)")
 	end
 	return true
 end
