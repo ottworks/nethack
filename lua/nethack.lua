@@ -132,22 +132,22 @@ local function logWrite(type, val, ...)
 	end
 end
 local function convertToType(val, type)
-	print("converting", val, type)
-	if type == "Float" then
-		return tonumber(val)
-	elseif type == "Int" then
-		return math.floor(tonumber(val))
-	elseif type == "UInt" then
-		return math.abs(math.floor(tonumber(val)))
+	local num = tonumber(val)
+	if type == "Float" and num then
+		return num
+	elseif type == "Int" and num then
+		return math.floor(num)
+	elseif type == "UInt" and num then
+		return math.abs(math.floor(num))
 	elseif type == "Entity" then
 		return Entity(val)
 	elseif type == "Bool" then
 		return val == "true" or false
 	elseif type == "Angle" then
-		local exp = string.Explode(val, "%D", true)
+		local exp = string.Explode("%D+", val, true)
 		return Angle(unpack(exp))
 	elseif type == "Vector" then
-		local exp = string.Explode(val, "%D", true)
+		local exp = string.Explode("%D+", val, true)
 		return Vector(unpack(exp))
 	end
 	return val
