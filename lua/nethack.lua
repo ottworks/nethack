@@ -27,13 +27,17 @@ local msgSettings = {}
 local lastInMsg = {}
 local lastOutMsg = {}
 local readQueue = {}
+local writeQueue = {}
+local interceptIn = {}
+local interceptOut = {}
+local incomingName
+local outgoingName
 local function logPrint(name, ...)
 	if shouldPrint then
 		if msgSettings[name] and not msgSettings[name].shown then return end
 		MsgC(...)
 	end
 end
-local incomingName
 local function logIncoming(name, length, start)
 	if start then
 		incomingCount[name] = (incomingCount[name] or 0) + 1
@@ -47,7 +51,6 @@ local function logIncoming(name, length, start)
 		incomingName = nil
 	end
 end
-local outgoingName
 local function logOutgoing(start, name, unreliable)
 	name = name or outgoingName
 	if not name then return end
@@ -152,6 +155,7 @@ local function hook()
 	for i = 1, #netTypes do
 		netFunctions[i] = net["Read"..netTypes[i]]
 		net["Read" .. netTypes[i]] = function(...)
+			if msgSettings[incomingName] and msgSettings[incomingName].sin then return end
 			local val
 			if #readQueue > 0 then
 				val = convertToType(table.remove(readQueue, 1), netTypes[i])
@@ -166,6 +170,9 @@ local function hook()
 		netFunctions[i + #netTypes] = net["Write"..netTypes[i]]
 		net["Write" .. netTypes[i]] = function(val, ...)
 			if outgoingName and msgSettings[outgoingName] and msgSettings[outgoingName].sout then return end
+			if #writeQueue > 0 then
+				val = convertToType(table.remove(writeQueue, 1), netTypes[i])
+			end
 			logWrite(netTypes[i], val, ...)
 			netFunctions[i + #netTypes](val, ...)
 		end
@@ -179,19 +186,27 @@ local function hook()
 		if ( !func ) then return end
 		len = len - 16
 		if msgSettings[strName] and msgSettings[strName].sin then return end
+		if interceptIn[strName] then
+			readQueue = table.Copy(interceptIn[strName])
+		end
 		logIncoming(strName, len, true)
 		func( len, client )
 		logIncoming(strName, len, false)
+		readQueue = {}
 	end
 	netStart = net.Start
 	function net.Start(name, unreliable)
 		if msgSettings[name] and msgSettings[name].sout then return end
+		if interceptOut[name] then
+			writeQueue = table.Copy(interceptOut[name])
+		end
 		logOutgoing(true, name, unreliable)
 		netStart(name, unreliable)
 	end
 	netSendToServer = net.SendToServer
 	function net.SendToServer()
-		if msgSettings[name] and msgSettings[name].sout then return end
+		if msgSettings[outgoingName] and msgSettings[outgoingName].sout then return end
+		writeQueue = {}
 		logOutgoing(false)
 		netSendToServer()
 	end
@@ -231,6 +246,11 @@ end)
 if GetConVarNumber("nethack_print") ~= 0 then
 	shouldPrint = true
 end
+
+
+
+
+
 
 concommand.Add("nethack_menu", function()
 	local frame = vgui.Create( "DFrame" )
@@ -347,7 +367,9 @@ concommand.Add("nethack_menu", function()
 				local lastTable = lastInMsg
 				local nlist
 				local sprop
+				local iprop
 				local srows = {}
+				local irows = {}
 				local inorout = true
 				
 				local function updatesprop()
@@ -364,15 +386,25 @@ concommand.Add("nethack_menu", function()
 							a.DataChanged = function(self, value)
 								a.val = value
 							end
-							--[[
-							if msg.type == "Float" then
-								a:Setup("Float")
-							elseif msg.type == "Int" or msg.type == "UInt" then
-								a:Setup("Int")
-							else
-								a:Setup("Generic")
-							end--]]
 							srows[#srows + 1] = {row = a, msg = msg}
+						end
+					end
+				end
+				local function updateiprop()
+					if lastTable[name] then
+						for i = 1, #lastTable[name] do
+							local msg = lastTable[name][i]
+							local a
+							if msg.arg then
+								a = iprop:CreateRow("General", i .. ". " .. (msg.type or "<none>") .. " (" .. msg.arg .. ")")
+							else
+								a = iprop:CreateRow("General", i .. ". " .. (msg.type or "<none>"))
+							end
+							a:Setup("Generic", {})
+							a.DataChanged = function(self, value)
+								a.val = value
+							end
+							irows[#srows + 1] = {row = a, msg = msg}
 						end
 					end
 				end
@@ -477,9 +509,54 @@ concommand.Add("nethack_menu", function()
 				---explorepanel
 				
 				local interceptpanel = vgui.Create("DPanel")
+					iprop = vgui.Create("DProperties", interceptpanel)
+						iprop:Dock(FILL)
+						updateiprop()
+					---iprop
+					local tbar = vgui.Create("DPanel", interceptpanel)
+						tbar:SetSize(0, 25)
+						tbar:Dock(BOTTOM)
+						local ibut = vgui.Create("DButton", tbar)
+							ibut:SetText("Apply")
+							ibut:SetSize(242, 0)
+							ibut:Dock(LEFT)
+							ibut.DoClick = function()
+								if inorout then
+									interceptIn[name] = {}
+									for i = 1, #irows do
+										local msg = irows[i].msg
+										local a = irows[i].row
+										local val = a.val
+										interceptIn[name][i] = val
+									end
+								else
+									interceptOut[name] = {}
+									for i = 1, #irows do
+										local msg = irows[i].msg
+										local a = irows[i].row
+										local val = a.val
+										interceptOut[name][i] = val
+									end
+								end
+							end
+						---ibut
+						local iclear = vgui.Create("DButton", tbar)
+							iclear:SetText("Clear")
+							iclear:SetSize(242, 0)
+							iclear:Dock(RIGHT)
+							iclear.DoClick = function()
+								updateiprop()
+								if inorout then
+									interceptIn[name] = nil
+								else
+									interceptOut[name] = nil
+								end
+							end
+						---iclear
+					---tbar
+				---interceptpanel
 				
 				local spoofpanel = vgui.Create("DPanel")
-					local sw, sh = spoofpanel:GetSize()
 					sprop = vgui.Create("DProperties", spoofpanel)
 						sprop:Dock(FILL)
 						updatesprop()
