@@ -70,6 +70,7 @@ local function logOutgoing(start, name, unreliable)
 end
 
 local function shouldLogRead(type, val, args)
+	--[[
 	local last = lastInMsg[incomingName]
 	if not last then return end
 	if #last > 0 then
@@ -83,6 +84,7 @@ local function shouldLogRead(type, val, args)
 			end
 		end
 	end
+	--]]
 	return true
 end
 local function logRead(type, val, ...)
@@ -100,6 +102,7 @@ local function logRead(type, val, ...)
 end
 
 local function shouldLogWrite(type, val, args)
+	--[[
 	local last = lastOutMsg[outgoingName]
 	if not last then return end
 	if #last > 0 then
@@ -112,6 +115,7 @@ local function shouldLogWrite(type, val, args)
 			end
 		end
 	end
+	--]]
 	return true
 end
 local function logWrite(type, val, ...)
@@ -128,12 +132,13 @@ local function logWrite(type, val, ...)
 	end
 end
 local function convertToType(val, type)
+	print("converting", val, type)
 	if type == "Float" then
 		return tonumber(val)
 	elseif type == "Int" then
-		return math.floor(val)
+		return math.floor(tonumber(val))
 	elseif type == "UInt" then
-		return math.abs(math.floor(val))
+		return math.abs(math.floor(tonumber(val)))
 	elseif type == "Entity" then
 		return Entity(val)
 	elseif type == "Bool" then
@@ -190,7 +195,7 @@ local function hook()
 			readQueue = table.Copy(interceptIn[strName])
 		end
 		logIncoming(strName, len, true)
-		func( len, client )
+		func(len, client)
 		logIncoming(strName, len, false)
 		readQueue = {}
 	end
@@ -545,6 +550,7 @@ concommand.Add("nethack_menu", function()
 									iclear:SetSize(242, 0)
 									iclear:Dock(RIGHT)
 									iclear.DoClick = function()
+										iprop:Clear()
 										updateiprop()
 										if inorout then
 											interceptIn[name] = nil
