@@ -417,192 +417,194 @@ concommand.Add("nethack_menu", function()
 				end
 				
 				local exframe = vgui.Create("DFrame")
-				exframe:SetTitle("Nethack :: " .. name .. " :: Explore")
-				exframe:SetSize(500, 300)
-				exframe:SetVisible( true )
-				exframe:SetDraggable( true )
-				exframe:MakePopup()
-				local fx, fy = frame:GetPos()
-				local fw, fh = frame:GetSize()
-				exframe:SetPos(fx + fw, fy)
-				
-				local props = vgui.Create("DPropertySheet", exframe)
-				props:SetPos(0, 25)
-				props:SetSize(500, 300 - 25)
-				
-				local inout = vgui.Create("DCheckBoxLabel", exframe)
-					inout:SetPos(500 - 100, 25)
-					inout:SetText("In/Out Toggle")
-					inout:SetValue(1)
-					inout:SizeToContents()
-					inout.OnChange = function(val)
-						if val:GetChecked() then
-							lastTable = lastInMsg
-							inorout = true
-						else
-							lastTable = lastOutMsg
-							inorout = false
-						end
-						nlist:Clear()
-						updatenlist()
-						sprop:Clear()
-						updatesprop()
-					end
-				---inout
-				
-				local viewpanel = vgui.Create("DPanel")
-					nlist = vgui.Create("DListView", viewpanel)
-						nlist:Dock(FILL)
-						nlist:AddColumn("Type")
-						nlist:AddColumn("Value")
-						nlist:AddColumn("Parameter")
-						updatenlist()
-						function nlist:DoDoubleClick(id, line)
-							SetClipboardText(line.Columns[2]:GetValue())
-							notification.AddLegacy("Content copied to clipboard.", NOTIFY_UNDO, 3)
-							surface.PlaySound("buttons/button15.wav")
-						end
-					---nlist
-				---viewpanel
-				
-				local explorepanel = vgui.Create("DPanel")
-					local etex = vgui.Create("RichText", explorepanel)
-						etex:Dock(FILL)
-						etex:InsertColorChange(128, 128, 255, 255)
-						local func = net.Receivers[string.lower(name)]
-						if func then
-							local info = debug.getinfo(func)
-							local src = info.short_src
-							etex:AppendText(src .. "\n")
-							etex:InsertColorChange(0, 0, 0, 196)
-							local file = file.Open(src, "r", "MOD")
-							if file then
-								local str = file:Read(file:Size())
-								file:Close()
-								local lines = {}
-								local cursor = 1
-								while true do
-									local pos = string.find(str, "\n", cursor)
-									if pos then
-										lines[#lines + 1] = string.sub(str, cursor, pos - 1)
-										cursor = pos + 1
-									else
-										break
-									end
-								end
-								print(#lines)
-								for ln = 1, #lines do
-									if ln == info.linedefined then
-										etex:InsertColorChange(0, 0, 0, 255)
-									elseif ln == info.lastlinedefined + 1 then
-										etex:InsertColorChange(0, 0, 0, 196)
-									end
-									etex:AppendText(lines[ln] .. "\n")
-								end
-							else
-								etex:AppendText("Could not read file.")
-							end
-						else
-							etex:AppendText("Could not read function.")
-						end
-					---etex
-				---explorepanel
-				
-				local interceptpanel = vgui.Create("DPanel")
-					iprop = vgui.Create("DProperties", interceptpanel)
-						iprop:Dock(FILL)
-						updateiprop()
-					---iprop
-					local tbar = vgui.Create("DPanel", interceptpanel)
-						tbar:SetSize(0, 25)
-						tbar:Dock(BOTTOM)
-						local ibut = vgui.Create("DButton", tbar)
-							ibut:SetText("Apply")
-							ibut:SetSize(242, 0)
-							ibut:Dock(LEFT)
-							ibut.DoClick = function()
-								if inorout then
-									interceptIn[name] = {}
-									for i = 1, #irows do
-										local msg = irows[i].msg
-										local a = irows[i].row
-										local val = a.val
-										interceptIn[name][i] = val
-									end
-								else
-									interceptOut[name] = {}
-									for i = 1, #irows do
-										local msg = irows[i].msg
-										local a = irows[i].row
-										local val = a.val
-										interceptOut[name][i] = val
-									end
-								end
-							end
-						---ibut
-						local iclear = vgui.Create("DButton", tbar)
-							iclear:SetText("Clear")
-							iclear:SetSize(242, 0)
-							iclear:Dock(RIGHT)
-							iclear.DoClick = function()
-								updateiprop()
-								if inorout then
-									interceptIn[name] = nil
-								else
-									interceptOut[name] = nil
-								end
-							end
-						---iclear
-					---tbar
-				---interceptpanel
-				
-				local spoofpanel = vgui.Create("DPanel")
-					sprop = vgui.Create("DProperties", spoofpanel)
-						sprop:Dock(FILL)
-						updatesprop()
-					---sprop
-					local sbut = vgui.Create("DButton", spoofpanel)
-						sbut:SetSize(0, 25)
-						sbut:Dock(BOTTOM)
-						sbut:SetText("Spoof")
-						sbut.DoClick = function()
-							if lastTable[name] then
-								if inorout then
-									for i = 1, #srows do
-										local msg = srows[i].msg
-										local a = srows[i].row
-										local val = a.val
-										readQueue[#readQueue + 1] = val
-									end
-									logIncoming(name, 0, true)
-									net.Receivers[string.lower(name)]()
-									logIncoming(name, 0, false)
-								else
-									net.Start(name)
-									for i = 1, #srows do
-										local msg = srows[i].msg
-										local a = srows[i].row
-										local val = a.val
-										net["Write" .. msg.type](convertToType(val, msg.type), msg.arg)
-									end
-									net.SendToServer()
-								end
-							end
-						end
-					---sbut
-				---spoofpanel
+					exframe:SetTitle("Nethack :: " .. name .. " :: Explore")
+					exframe:SetSize(500, 300)
+					exframe:SetVisible( true )
+					exframe:SetDraggable( true )
+					exframe:MakePopup()
+					local fx, fy = frame:GetPos()
+					local fw, fh = frame:GetSize()
+					exframe:SetPos(fx + fw, fy)
 					
-				local viewtab = props:AddSheet("View", viewpanel).Tab
-					viewtab.DoClick = function(self)
-						self:GetPropertySheet():SetActiveTab( self )
-						nlist:Clear()
-						updatenlist()
-					end
-				---viewtab
-				
-				props:AddSheet("Explore", explorepanel)
-				props:AddSheet("Intercept", interceptpanel)
-				props:AddSheet("Spoof", spoofpanel)
+					local props = vgui.Create("DPropertySheet", exframe)
+						props:SetPos(0, 25)
+						props:SetSize(500, 300 - 25)
+						
+						local inout = vgui.Create("DCheckBoxLabel", exframe)
+							inout:SetPos(500 - 100, 25)
+							inout:SetText("In/Out Toggle")
+							inout:SetValue(1)
+							inout:SizeToContents()
+							inout.OnChange = function(val)
+								if val:GetChecked() then
+									lastTable = lastInMsg
+									inorout = true
+								else
+									lastTable = lastOutMsg
+									inorout = false
+								end
+								nlist:Clear()
+								updatenlist()
+								sprop:Clear()
+								updatesprop()
+							end
+						---inout
+						
+						local viewpanel = vgui.Create("DPanel")
+							nlist = vgui.Create("DListView", viewpanel)
+								nlist:Dock(FILL)
+								nlist:AddColumn("Type")
+								nlist:AddColumn("Value")
+								nlist:AddColumn("Parameter")
+								updatenlist()
+								function nlist:DoDoubleClick(id, line)
+									SetClipboardText(line.Columns[2]:GetValue())
+									notification.AddLegacy("Content copied to clipboard.", NOTIFY_UNDO, 3)
+									surface.PlaySound("buttons/button15.wav")
+								end
+							---nlist
+						---viewpanel
+						
+						local explorepanel = vgui.Create("DPanel")
+							local etex = vgui.Create("RichText", explorepanel)
+								etex:Dock(FILL)
+								etex:InsertColorChange(128, 128, 255, 255)
+								local func = net.Receivers[string.lower(name)]
+								if func then
+									local info = debug.getinfo(func)
+									local src = info.short_src
+									etex:AppendText(src .. "\n")
+									etex:InsertColorChange(0, 0, 0, 196)
+									local file = file.Open(src, "r", "MOD")
+									if file then
+										local str = file:Read(file:Size())
+										file:Close()
+										local lines = {}
+										local cursor = 1
+										while true do
+											local pos = string.find(str, "\n", cursor)
+											if pos then
+												lines[#lines + 1] = string.sub(str, cursor, pos - 1)
+												cursor = pos + 1
+											else
+												break
+											end
+										end
+										print(#lines)
+										for ln = 1, #lines do
+											if ln == info.linedefined then
+												etex:InsertColorChange(0, 0, 0, 255)
+											elseif ln == info.lastlinedefined + 1 then
+												etex:InsertColorChange(0, 0, 0, 196)
+											end
+											etex:AppendText(lines[ln] .. "\n")
+										end
+									else
+										etex:AppendText("Could not read file.")
+									end
+								else
+									etex:AppendText("Could not read function.")
+								end
+							---etex
+						---explorepanel
+						
+						local interceptpanel = vgui.Create("DPanel")
+							iprop = vgui.Create("DProperties", interceptpanel)
+								iprop:Dock(FILL)
+								updateiprop()
+							---iprop
+							local tbar = vgui.Create("DPanel", interceptpanel)
+								tbar:SetSize(0, 25)
+								tbar:Dock(BOTTOM)
+								local ibut = vgui.Create("DButton", tbar)
+									ibut:SetText("Apply")
+									ibut:SetSize(242, 0)
+									ibut:Dock(LEFT)
+									ibut.DoClick = function()
+										if inorout then
+											interceptIn[name] = {}
+											for i = 1, #irows do
+												local msg = irows[i].msg
+												local a = irows[i].row
+												local val = a.val
+												interceptIn[name][i] = val
+											end
+										else
+											interceptOut[name] = {}
+											for i = 1, #irows do
+												local msg = irows[i].msg
+												local a = irows[i].row
+												local val = a.val
+												interceptOut[name][i] = val
+											end
+										end
+									end
+								---ibut
+								local iclear = vgui.Create("DButton", tbar)
+									iclear:SetText("Clear")
+									iclear:SetSize(242, 0)
+									iclear:Dock(RIGHT)
+									iclear.DoClick = function()
+										updateiprop()
+										if inorout then
+											interceptIn[name] = nil
+										else
+											interceptOut[name] = nil
+										end
+									end
+								---iclear
+							---tbar
+						---interceptpanel
+						
+						local spoofpanel = vgui.Create("DPanel")
+							sprop = vgui.Create("DProperties", spoofpanel)
+								sprop:Dock(FILL)
+								updatesprop()
+							---sprop
+							local sbut = vgui.Create("DButton", spoofpanel)
+								sbut:SetSize(0, 25)
+								sbut:Dock(BOTTOM)
+								sbut:SetText("Spoof")
+								sbut.DoClick = function()
+									if lastTable[name] then
+										if inorout then
+											for i = 1, #srows do
+												local msg = srows[i].msg
+												local a = srows[i].row
+												local val = a.val
+												readQueue[#readQueue + 1] = val
+											end
+											logIncoming(name, 0, true)
+											net.Receivers[string.lower(name)]()
+											logIncoming(name, 0, false)
+										else
+											net.Start(name)
+											for i = 1, #srows do
+												local msg = srows[i].msg
+												local a = srows[i].row
+												local val = a.val
+												net["Write" .. msg.type](convertToType(val, msg.type), msg.arg)
+											end
+											net.SendToServer()
+										end
+									end
+								end
+							---sbut
+						---spoofpanel
+							
+						local viewtab = props:AddSheet("View", viewpanel).Tab
+							viewtab.DoClick = function(self)
+								self:GetPropertySheet():SetActiveTab( self )
+								nlist:Clear()
+								updatenlist()
+							end
+						---viewtab
+						
+						props:AddSheet("Explore", explorepanel)
+						props:AddSheet("Intercept", interceptpanel)
+						props:AddSheet("Spoof", spoofpanel)
+					---props
+				---exframe
 			end
 		---explore
 		
