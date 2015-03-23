@@ -412,7 +412,7 @@ concommand.Add("nethack_menu", function()
 							a.DataChanged = function(self, value)
 								a.val = value
 							end
-							irows[#srows + 1] = {row = a, msg = msg}
+							irows[#irows + 1] = {row = a, msg = msg}
 						end
 					end
 				end
