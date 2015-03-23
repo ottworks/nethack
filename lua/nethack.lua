@@ -149,6 +149,9 @@ local function convertToType(val, type)
 	elseif type == "Vector" then
 		local exp = string.Explode("%D+", val, true)
 		return Vector(unpack(exp))
+	elseif type == "Color" then
+		local exp = string.Explode("%D+", val, true)
+		return Color(unpack(exp))
 	end
 	return val
 end
