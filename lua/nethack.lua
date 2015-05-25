@@ -210,8 +210,16 @@ local function hook()
 					val = pval
 				end
 			end
-			logWrite(netTypes[i], val, ...)
-			netFunctions[i + #netTypes](val, ...)
+			if specialCases[netTypes[i]] then
+				ignoreOut = true
+				netFunctions[i + #netTypes](val, ...)
+				ignoreOut = false
+			else
+				netFunctions[i + #netTypes](val, ...)
+			end
+			if not ignoreOut then
+				logWrite(netTypes[i], val, ...)
+			end
 		end
 	end
 	netIncoming = net.Incoming
