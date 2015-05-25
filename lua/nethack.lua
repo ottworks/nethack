@@ -1,12 +1,12 @@
 --nethack: Net message sniffer by Ott (STEAM_0:0:36527860)
 local netTypes = {
-	"Angle",
-	"Bit",
+	"Entity",
 	"Bool",
 	"Color",
+	"Angle",
+	"Bit",
 	"Data",
 	"Double",
-	"Entity",
 	"Float",
 	"Int",
 	"Normal",
@@ -15,6 +15,11 @@ local netTypes = {
 	"Type",
 	"UInt",
 	"Vector",
+}
+local specialCases = {
+	Entity = {"UInt"},
+	Bool = {"Bit"},
+	Color = {"UInt", "UInt", "UInt", "UInt"} --TODO: make a proper "ignore" thing
 }
 local COLOR_TEXT = Color(255, 255, 255)
 local COLOR_NUM = Color(255, 128, 0)
@@ -159,6 +164,8 @@ local netFunctions = {}
 local netIncoming
 local netStart
 local netSendToServer
+local ignoreIn
+local ignoreOut
 local function hook()
 	for i = 1, #netTypes do
 		netFunctions[i] = net["Read"..netTypes[i]]
@@ -166,11 +173,30 @@ local function hook()
 			if msgSettings[incomingName] and msgSettings[incomingName].sin then return end
 			local val
 			if #readQueue > 0 then
-				val = convertToType(table.remove(readQueue, 1), netTypes[i])
+				local pval = convertToType(table.remove(readQueue, 1), netTypes[i])
+				if pval ~= "NETHACK_NOVALUE" then
+					val = pval
+				else
+					if specialCases[netTypes[i]] then
+						ignoreIn = true
+						val = netFunctions[i](...)
+						ignoreIn = false
+					else
+						val = netFunctions[i](...)
+					end
+				end
 			else
-				val = netFunctions[i](...)
+				if specialCases[netTypes[i]] then
+					ignoreIn = true
+					val = netFunctions[i](...)
+					ignoreIn = false
+				else
+					val = netFunctions[i](...)
+				end
 			end
-			logRead(netTypes[i], val, ...)
+			if not ignoreIn then
+				logRead(netTypes[i], val, ...)
+			end
 			return val
 		end
 	end
@@ -179,7 +205,10 @@ local function hook()
 		net["Write" .. netTypes[i]] = function(val, ...)
 			if outgoingName and msgSettings[outgoingName] and msgSettings[outgoingName].sout then return end
 			if #writeQueue > 0 then
-				val = convertToType(table.remove(writeQueue, 1), netTypes[i])
+				local pval = convertToType(table.remove(writeQueue, 1), netTypes[i])
+				if pval ~= "NETHACK_NOVALUE" then
+					val = pval
+				end
 			end
 			logWrite(netTypes[i], val, ...)
 			netFunctions[i + #netTypes](val, ...)
@@ -498,7 +527,6 @@ concommand.Add("nethack_menu", function()
 												break
 											end
 										end
-										print(#lines)
 										for ln = 1, #lines do
 											if ln == info.linedefined then
 												etex:InsertColorChange(0, 0, 0, 255)
@@ -532,10 +560,12 @@ concommand.Add("nethack_menu", function()
 										if inorout then
 											interceptIn[name] = {}
 											for i = 1, #irows do
+												print(i)
 												local msg = irows[i].msg
 												local a = irows[i].row
 												local val = a.val
-												interceptIn[name][i] = val
+												print(val, type(val), type(val) == "string" and #val)
+												interceptIn[name][i] = val or "NETHACK_NOVALUE"
 											end
 										else
 											interceptOut[name] = {}
@@ -543,7 +573,12 @@ concommand.Add("nethack_menu", function()
 												local msg = irows[i].msg
 												local a = irows[i].row
 												local val = a.val
-												interceptOut[name][i] = val
+												if type(val) == "string" then
+													if #val == 0 then
+														val = nil
+													end
+												end
+												interceptOut[name][i] = val or "NETHACK_NOVALUE"
 											end
 										end
 									end
@@ -576,12 +611,18 @@ concommand.Add("nethack_menu", function()
 								sbut:SetText("Spoof")
 								sbut.DoClick = function()
 									if lastTable[name] then
+										local ltab = lastTable[name]
 										if inorout then
 											for i = 1, #srows do
+												local dmsg = ltab[i] or {}
 												local msg = srows[i].msg
 												local a = srows[i].row
 												local val = a.val
-												readQueue[#readQueue + 1] = val
+												if type(val) == "string" and #val == 0 then
+													val = nil
+												end
+												readQueue[i] = val or dmsg.val
+												print(name, i, val, dmsg.val)
 											end
 											logIncoming(name, 0, true)
 											net.Receivers[string.lower(name)]()
@@ -589,10 +630,11 @@ concommand.Add("nethack_menu", function()
 										else
 											net.Start(name)
 											for i = 1, #srows do
+												local dmsg = ltab[i] or {}
 												local msg = srows[i].msg
 												local a = srows[i].row
 												local val = a.val
-												net["Write" .. msg.type](convertToType(val, msg.type), msg.arg)
+												net["Write" .. msg.type](convertToType(val or dmsg.val, msg.type), msg.arg)
 											end
 											net.SendToServer()
 										end
