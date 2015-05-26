@@ -492,6 +492,8 @@ concommand.Add("nethack_menu", function()
 								updatenlist()
 								sprop:Clear()
 								updatesprop()
+								iprop:Clear()
+								updateiprop()
 							end
 						---inout
 						
