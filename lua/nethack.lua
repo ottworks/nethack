@@ -570,11 +570,9 @@ concommand.Add("nethack_menu", function()
 										if inorout then
 											interceptIn[name] = {}
 											for i = 1, #irows do
-												print(i)
 												local msg = irows[i].msg
 												local a = irows[i].row
 												local val = a.val
-												print(val, type(val), type(val) == "string" and #val)
 												interceptIn[name][i] = val or "NETHACK_NOVALUE"
 											end
 										else
@@ -632,7 +630,6 @@ concommand.Add("nethack_menu", function()
 													val = nil
 												end
 												readQueue[i] = val or dmsg.val
-												print(name, i, val, dmsg.val)
 											end
 											logIncoming(name, 0, true)
 											net.Receivers[string.lower(name)]()
