@@ -167,6 +167,7 @@ local netSendToServer
 local ignoreIn
 local ignoreOut
 
+-- Support for autoreload
 local isHooked = function()
 	local netStartInfo = debug.getinfo(net.Start)
 	return (netStartInfo.source:find("nethack") != nil)
@@ -276,8 +277,7 @@ local function unhook()
 	net.SendToServer = netSendToServer
 end
 
--- Support for autoreload
-CreateClientConVar("nethack_enabled", 1)
+CreateConVar("nethack_enabled", 1, FCVAR_UNLOGGED, "Whether nethack should be enabled")
 cvars.AddChangeCallback("nethack_enabled", function(name, value_old, value_new)
 	if GetConVarNumber("nethack_enabled") == 1 then
 		hook()
@@ -289,7 +289,8 @@ if GetConVarNumber("nethack_enabled") == 1 then
 	hook()
 end
 
-CreateClientConVar("nethack_print", 1)
+
+CreateConVar("nethack_print", 1, FCVAR_UNLOGGED, "Whether nethack messages should be printed to the console")
 cvars.AddChangeCallback("nethack_print", function(name, value_old, value_new)
 	if GetConVarNumber("nethack_print") == 1 then
 		shouldPrint = true
@@ -300,8 +301,6 @@ end)
 if GetConVarNumber("nethack_print") ~= 0 then
 	shouldPrint = true
 end
-
-
 
 
 if (CLIENT) then
