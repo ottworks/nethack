@@ -166,7 +166,11 @@ local netStart
 local netSendToServer
 local ignoreIn
 local ignoreOut
+
+nethack_hooked = nethack_hooked or false
+
 local function hook()
+	if (nethack_hooked == true) then return end
 	for i = 1, #netTypes do
 		netFunctions[i] = net["Read"..netTypes[i]]
 		net["Read" .. netTypes[i]] = function(...)
@@ -255,8 +259,10 @@ local function hook()
 		logOutgoing(false)
 		netSendToServer()
 	end
+	nethack_hooked = true
 end
 local function unhook()
+	if (nethack_hooked == false) then return end
 	for i = 1, #netTypes do
 		net["Read"..netTypes[i]] = netFunctions[i]
 	end
@@ -266,17 +272,30 @@ local function unhook()
 	net.Incoming = netIncoming
 	net.Start = netStart
 	net.SendToServer = netSendToServer
+	nethack_hooked = false
 end
 
+-- Support for autoreload
 CreateClientConVar("nethack_enabled", 1)
+local enabled = GetConVarNumber("nethack_enabled")
+nethack_loadedAtLeastOnce = nethack_loadedAtLeastOnce or false
+if (nethack_loadedAtLeastOnce == false) then
+	nethack_loadedAtLeastOnce = true -- Initial load
+else -- Reload
+	if (hooked) then
+		unhook()
+		-- It will rehook few lines later on
+	end
+end
+
 cvars.AddChangeCallback("nethack_enabled", function(name, value_old, value_new)
-	if GetConVarNumber("nethack_enabled") == 1 then
+	if enabled then
 		hook()
-	elseif GetConVarNumber("nethack_enabled") == 0 then
+	elseif !enabled then
 		unhook()
 	end
 end)
-if GetConVarNumber("nethack_enabled") == 1 then
+if enabled then
 	hook()
 end
 
