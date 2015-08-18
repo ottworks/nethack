@@ -167,10 +167,13 @@ local netSendToServer
 local ignoreIn
 local ignoreOut
 
-nethack_hooked = nethack_hooked or false
+local isHooked = function()
+	local netStartInfo = debug.getinfo(net.Start)
+	return (netStartInfo.source:find("nethack") != nil)
+end
 
 local function hook()
-	if (nethack_hooked == true) then return end
+	if (isHooked() == true) then return end
 	for i = 1, #netTypes do
 		netFunctions[i] = net["Read"..netTypes[i]]
 		net["Read" .. netTypes[i]] = function(...)
@@ -259,10 +262,9 @@ local function hook()
 		logOutgoing(false)
 		netSendToServer()
 	end
-	nethack_hooked = true
 end
 local function unhook()
-	if (nethack_hooked == false) then return end
+	if (isHooked() == false) then return end
 	for i = 1, #netTypes do
 		net["Read"..netTypes[i]] = netFunctions[i]
 	end
@@ -272,30 +274,18 @@ local function unhook()
 	net.Incoming = netIncoming
 	net.Start = netStart
 	net.SendToServer = netSendToServer
-	nethack_hooked = false
 end
 
 -- Support for autoreload
 CreateClientConVar("nethack_enabled", 1)
-local enabled = GetConVarNumber("nethack_enabled")
-nethack_loadedAtLeastOnce = nethack_loadedAtLeastOnce or false
-if (nethack_loadedAtLeastOnce == false) then
-	nethack_loadedAtLeastOnce = true -- Initial load
-else -- Reload
-	if (hooked) then
-		unhook()
-		-- It will rehook few lines later on
-	end
-end
-
 cvars.AddChangeCallback("nethack_enabled", function(name, value_old, value_new)
-	if enabled then
+	if GetConVarNumber("nethack_enabled") == 1 then
 		hook()
-	elseif !enabled then
+	elseif GetConVarNumber("nethack_enabled") == 0 then
 		unhook()
 	end
 end)
-if enabled then
+if GetConVarNumber("nethack_enabled") == 1 then
 	hook()
 end
 
@@ -333,7 +323,7 @@ if (CLIENT) then
 		local cout = list:AddColumn("Out")
 		cin:SetFixedWidth(50)
 		cout:SetFixedWidth(50)
-
+		
 		local msgs = table.Copy(incomingCount)
 		local msgs2 = table.Copy(outgoingCount)
 		table.Merge(msgs, msgs2)
@@ -346,7 +336,7 @@ if (CLIENT) then
 		for _, name in ipairs(keys) do
 			lines[name] = list:AddLine(name, incomingCount[name] or 0, outgoingCount[name] or 0)
 		end
-
+		
 		timer.Destroy("nethack_update")
 		timer.Create("nethack_update", 1, 0, function()
 			if IsValid(frame) then
@@ -366,7 +356,7 @@ if (CLIENT) then
 				list:SortByColumn(1)
 			end
 		end)
-
+		
 		local panel = vgui.Create("DPanel", frame)
 		panel:SetPos(105 + 175, 25)
 		panel:SetSize(390 - 175, 270)
@@ -375,7 +365,7 @@ if (CLIENT) then
 		list.OnRowSelected = function(self, line)
 			local name = self:GetLine(line):GetValue(1)
 			panel:Clear()
-
+	 
 			local props = vgui.Create("DProperties", panel)
 			props:SetPos(0, 0)
 			props:SetSize(390, 250 - 20)
@@ -404,7 +394,7 @@ if (CLIENT) then
 			general.DataChanged = function (self, value)
 				msg.sout = value ~= 0
 			end
-
+			
 			local help = vgui.Create("DButton", panel)
 			help:SetPos(390 - 175 - 20, 250 - 20)
 			help:SetSize(20, 20)
@@ -421,7 +411,7 @@ if (CLIENT) then
 				local hpan = vgui.Create("DPanel", hframe)
 				hpan:Dock(FILL)
 			end
-
+			
 			local explore = vgui.Create("DButton", panel)
 				explore:SetPos(0, 250 - 20)
 				explore:SetSize(390 - 175 - 20, 20)
@@ -434,7 +424,7 @@ if (CLIENT) then
 					local srows = {}
 					local irows = {}
 					local inorout = true
-
+					
 					local function updatesprop()
 						if lastTable[name] then
 							for i = 1, #lastTable[name] do
@@ -492,7 +482,7 @@ if (CLIENT) then
 						local props = vgui.Create("DPropertySheet", exframe)
 							props:SetPos(0, 25)
 							props:SetSize(500, 300 - 25)
-
+							
 							local inout = vgui.Create("DCheckBoxLabel", exframe)
 								inout:SetPos(500 - 100, 25)
 								inout:SetText("In/Out Toggle")
@@ -514,7 +504,7 @@ if (CLIENT) then
 									updateiprop()
 								end
 							---inout
-
+							
 							local viewpanel = vgui.Create("DPanel")
 								nlist = vgui.Create("DListView", viewpanel)
 									nlist:Dock(FILL)
@@ -529,7 +519,7 @@ if (CLIENT) then
 									end
 								---nlist
 							---viewpanel
-
+							
 							local explorepanel = vgui.Create("DPanel")
 								local etex = vgui.Create("RichText", explorepanel)
 									etex:Dock(FILL)
@@ -571,7 +561,7 @@ if (CLIENT) then
 									end
 								---etex
 							---explorepanel
-
+							
 							local interceptpanel = vgui.Create("DPanel")
 								iprop = vgui.Create("DProperties", interceptpanel)
 									iprop:Dock(FILL)
@@ -625,7 +615,7 @@ if (CLIENT) then
 									---iclear
 								---tbar
 							---interceptpanel
-
+							
 							local spoofpanel = vgui.Create("DPanel")
 								sprop = vgui.Create("DProperties", spoofpanel)
 									sprop:Dock(FILL)
@@ -667,7 +657,7 @@ if (CLIENT) then
 									end
 								---sbut
 							---spoofpanel
-
+								
 							local viewtab = props:AddSheet("View", viewpanel).Tab
 								viewtab.DoClick = function(self)
 									self:GetPropertySheet():SetActiveTab( self )
@@ -683,7 +673,7 @@ if (CLIENT) then
 					---exframe
 				end
 			---explore
-
+			
 			local container = vgui.Create("DPanel", panel)
 				container:SetPos(0, 250)
 				container:SetSize(390 - 175, 20)
